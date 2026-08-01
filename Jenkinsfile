@@ -1,14 +1,21 @@
 pipeline {
     agent any
 
+    environment {
+        PATH = "/usr/local/bin:/usr/bin:/bin"
+    }
+
     stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/Sachin639191/flask-backend.git'
+            }
+        }
+
         stage('Install Dependencies') {
             steps {
                 sh '''
-                    python3 -m venv venv
-                    . venv/bin/activate
-                    pip install --upgrade pip
-                    if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+                    /home/ubuntu/venv/bin/python3 -m pip install -r requirements.txt
                 '''
             }
         }
@@ -16,10 +23,18 @@ pipeline {
         stage('Deploy') {
             steps {
                 sh '''
-                    echo "Deploying Flask application..."
-                    # Add your restart/deployment commands here (e.g., systemctl restart flask / gunicorn)
+                    sudo -u ubuntu pm2 restart flask-backend || sudo -u ubuntu pm2 start app.py --name "flask-backend" --interpreter /home/ubuntu/venv/bin/python3
                 '''
             }
+        }
+    }
+
+    post {
+        success {
+            echo 'Flask app deployed successfully!'
+        }
+        failure {
+            echo 'Flask deployment failed!'
         }
     }
 }
